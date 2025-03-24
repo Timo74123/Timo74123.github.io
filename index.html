@@ -1,55 +1,90 @@
+
 <!DOCTYPE html>
-<html lang="fr">
+<html>
+
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
+    <title>mytitle</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LED Race Controller</title>
-    <link rel="manifest" href="Manifest.json">
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            background-color: #121212;
-            color: white;
-            margin: 0;
-            padding: 20px;
-        }
-        h1 {
-            color: #1E88E5;
-        }
-        button {
-            font-size: 20px;
-            padding: 15px;
-            margin: 10px;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            width: 80%;
-            max-width: 300px;
-        }
-        #connect {
-            background-color: #4CAF50;
-            color: white;
-        }
-        #player1 {
-            background-color: #E91E63;
-            color: white;
-        }
-        #player2 {
-            background-color: #FF9800;
-            color: white;
-        }
-    </style>
 </head>
+
 <body>
+    <div>Application de démonstration bluetooth...</div>
+    <div id="status">None</div>
+    <script>
 
-    <h1>LED Race Controller</h1>
-    <button id="connect">Connecter au Raspberry Pi Pico W</button>
-    <br>
-    <button id="player1">Joueur 1</button>
-    <button id="player2">Joueur 2</button>
+        // variable globale pour l'envoi et la réception de messages vers l'équipement bluetooth distant
+        var rx = null;
+        var tx = null;
 
-    <script src="script.js"></script>
+        // identifiant standardisé pour une communication texte (le nom de ce service est dénommé: Nordic UART)
+        const serviceUuid = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+        let device = null;
+
+        async function init() {
+
+            if (!('bluetooth' in navigator)) {
+                alert("Support bluetooth non disponible, veuillez activer le mode expérimental")
+                return
+            }
+
+            //device = await navigator.bluetooth.requestDevice({ acceptAllDevices: true });
+            device = await navigator.bluetooth.requestDevice({ filters: [{ services: [serviceUuid] }] });
+            let msg = `device.name=${device.name}`;
+            document.getElementById("status").innerText = msg;
+            console.log(msg);
+        }
+
+        async function listServices() {
+            const server = await device.gatt.connect();
+            const services = await server.getPrimaryServices();
+
+            // récupération des identifiants de services disponibles sous forme de tableau
+            const uuids = services.map(service => service.uuid);
+
+            let msg = `Available UUIDs:${uuids}`;
+            document.getElementById("status").innerText = msg;
+            console.log(msg);
+        }
+
+        async function connect() {
+            const server = await device.gatt.connect();
+            const service = await server.getPrimaryService(serviceUuid);
+            tx = await service.getCharacteristic('6e400002-b5a3-f393-e0a9-e50e24dcca9e');
+
+            rx = await service.getCharacteristic('6e400003-b5a3-f393-e0a9-e50e24dcca9e');
+            // on écoute les notification de l'équipement bluetooth distant
+            await rx.startNotifications();
+
+            // on s'abonne au changement d'état de l'objet rx recevant les message de l'équipement BT distant
+            // et on les affiche.
+            rx.addEventListener('characteristicvaluechanged', event => {
+                const receivedValue = event.target.value;
+                const message = new TextDecoder().decode(receivedValue);
+                console.log('Received message:', message);
+                document.getElementById("status").innerText = message;
+            });
+
+
+            document.getElementById("status").innerText = "Connexion RX/TX effectuée";
+        }
+
+        async function sendCmd(cmd) {
+            const encoder = new TextEncoder();
+            document.getElementById("status").innerText = `commande à envoyer: ${cmd}`;
+            const cmdBytes = encoder.encode(cmd);
+            await tx.writeValue(cmdBytes);
+        }
+
+    </script>
+    <button onclick="init()">Appairer un équipement bluetooth (BT)</button>
+    <button onclick="listServices()">Lister les identifiants de services BT disponibles</button>
+    <button onclick="connect()">Se connecter aux canaux réception (RT) / émission (TX) BT</button>
+
+    <label for="myCmdInput">Commande: </label>
+    <input type="text" id="myCmdInput" />
+    <button onclick="sendCmd(document.getElementById('myCmdInput').value)">Envoyer</button>
 
 </body>
+
 </html>
