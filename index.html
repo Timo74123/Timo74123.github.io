@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LED Race Controller</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #121212;
+            color: white;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            color: #1E88E5;
+        }
+        button {
+            font-size: 20px;
+            padding: 15px;
+            margin: 10px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            width: 80%;
+            max-width: 300px;
+        }
+        #connect {
+            background-color: #4CAF50;
+            color: white;
+        }
+        #player1 {
+            background-color: #E91E63;
+            color: white;
+        }
+        #player2 {
+            background-color: #FF9800;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>LED Race Controller</h1>
+    <button id="connect">Connecter au Raspberry Pi Pico W</button>
+    <br>
+    <button id="player1">Joueur 1</button>
+    <button id="player2">Joueur 2</button>
+
+    <script src="script.js"></script>
+
+</body>
+</html>
