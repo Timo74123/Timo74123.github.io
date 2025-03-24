@@ -1,34 +1,34 @@
 let bluetoothDevice;
-let ledService;
-let player1Char, player2Char;
+let txCharacteristic;
 
-document.getElementById("connect").addEventListener("click", async () => {
+async function connectBluetooth() {
     try {
         bluetoothDevice = await navigator.bluetooth.requestDevice({
-            acceptAllDevices: true,
-            optionalServices: ['12345678-1234-5678-1234-56789abcdef0'] // UUID du service BLE
+            filters: [{ services: ['6e400001-b5a3-f393-e0a9-e50e24dcca9e'] }]
         });
 
         const server = await bluetoothDevice.gatt.connect();
-        ledService = await server.getPrimaryService('12345678-1234-5678-1234-56789abcdef0');
-
-        player1Char = await ledService.getCharacteristic('abcdef01-1234-5678-1234-56789abcdef0');
-        player2Char = await ledService.getCharacteristic('abcdef02-1234-5678-1234-56789abcdef0');
+        const service = await server.getPrimaryService('6e400001-b5a3-f393-e0a9-e50e24dcca9e');
+        txCharacteristic = await service.getCharacteristic('6e400002-b5a3-f393-e0a9-e50e24dcca9e');
 
         console.log("Connecté au Raspberry Pi Pico W !");
+        document.getElementById("status").innerText = "Connecté au Pico W";
     } catch (error) {
         console.error("Erreur de connexion :", error);
     }
-});
+}
 
-document.getElementById("player1").addEventListener("click", async () => {
-    if (player1Char) {
-        await player1Char.writeValue(new Uint8Array([1]));
+async function sendCommand(command) {
+    if (!txCharacteristic) {
+        console.error("Bluetooth non connecté !");
+        return;
     }
-});
+    const encoder = new TextEncoder();
+    await txCharacteristic.writeValue(encoder.encode(command));
+    console.log(`Commande envoyée : ${command}`);
+}
 
-document.getElementById("player2").addEventListener("click", async () => {
-    if (player2Char) {
-        await player2Char.writeValue(new Uint8Array([1]));
-    }
-});
+// Associe les boutons aux commandes
+document.getElementById("connect").addEventListener("click", connectBluetooth);
+document.getElementById("player1").addEventListener("click", () => sendCommand("player1"));
+document.getElementById("player2").addEventListener("click", () => sendCommand("player2"));
